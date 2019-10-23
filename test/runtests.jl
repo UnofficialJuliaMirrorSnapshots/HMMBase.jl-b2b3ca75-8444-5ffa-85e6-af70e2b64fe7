@@ -8,24 +8,22 @@ Random.seed!(2018)
 targets = [
     HMM([0.9 0.1; 0.1 0.9], [Normal(0,1), Normal(10,1)]),
     HMM([0.9 0.1; 0.1 0.9], [MvNormal([0.0,0.0], [1.0,1.0]), MvNormal([10.0,10.0], [1.0,1.0])]),
-    # StaticHMM([0.9 0.1; 0.1 0.9], [Normal(0,1), Normal(10,1)]),
-    # StaticHMM([0.9 0.1; 0.1 0.9], [MvNormal([0.0,0.0], [1.0,1.0]), MvNormal([10.0,10.0], [1.0,1.0])])
 ]
 
 @testset "Constructors" begin
     # Test error are raised
     # wrong Tras Matrix
-    @test_throws ErrorException HMM(ones(2,2), [Normal();Normal()])
+    @test_throws ArgumentError HMM(ones(2,2), [Normal();Normal()])
     # wrong Tras Matrix dimensions
-    @test_throws ErrorException HMM([0.8 0.1 0.1; 0.1 0.1 0.8], [Normal(0,1), Normal(10,1)])
+    @test_throws ArgumentError HMM([0.8 0.1 0.1; 0.1 0.1 0.8], [Normal(0,1), Normal(10,1)])
     # wrong number of Distributions
-    @test_throws ErrorException HMM([0.8 0.2; 0.1 0.9], [Normal(0,1), Normal(10,1), Normal()])
+    @test_throws ArgumentError HMM([0.8 0.2; 0.1 0.9], [Normal(0,1), Normal(10,1), Normal()])
     # wrong distribution size
-    @test_throws ErrorException HMM([0.8 0.2; 0.1 0.9], [MvNormal(randn(3)), MvNormal(randn(10))])
+    @test_throws ArgumentError HMM([0.8 0.2; 0.1 0.9], [MvNormal(randn(3)), MvNormal(randn(10))])
     # wrong initial state 
-    @test_throws ErrorException HMM([0.1;0.1],[0.9 0.1; 0.1 0.9], [Normal(0,1), Normal(10,1)])
+    @test_throws ArgumentError HMM([0.1;0.1],[0.9 0.1; 0.1 0.9], [Normal(0,1), Normal(10,1)])
     # wrong initial state length
-    @test_throws ErrorException HMM([0.1;0.1;0.8],[0.9 0.1; 0.1 0.9], [Normal(0,1), Normal(10,1)])
+    @test_throws ArgumentError HMM([0.1;0.1;0.8],[0.9 0.1; 0.1 0.9], [Normal(0,1), Normal(10,1)])
 end
 
 @testset "Random" begin
@@ -36,7 +34,10 @@ end
     @test y[:] == z
 end
 
-@testset "Messages" begin
+@testset "Messages $f" for f in [
+    (forward, backward, posteriors),
+    (forwardlog, backwardlog, posteriorslog)
+]
     # Example from https://en.wikipedia.org/wiki/Forward%E2%80%93backward_algorithm
     π = [0.7 0.3; 0.3 0.7]
     D = [Categorical([0.9, 0.1]), Categorical([0.2, 0.8])]
@@ -44,13 +45,13 @@ end
 
     O = [1,1,2,1,1]
 
-    α, logtot_alpha = messages_forwards(hmm, O)
+    α, logtot_alpha = f[1](hmm, O)
     α = round.(α, digits=4)
 
-    β, logtot_beta = messages_backwards(hmm, O)
+    β, logtot_beta = f[2](hmm, O)
     β = round.(β, digits=4)
 
-    γ = forward_backward(hmm, O)
+    γ = f[3](hmm, O)
     γ = round.(γ, digits=4)
 
     @test α == [
@@ -84,11 +85,9 @@ end
     # TODO: Better viterbi tests....
     z, y = rand(hmm, 1000);
     z_viterbi = viterbi(hmm, y)
+    z_viterbilog = viterbilog(hmm, y)
     @test z == z_viterbi
-
-    # Viterbi with a uniform initial distribution
-    #(Only to make sure the code path works)
-    viterbi(hmm.π, HMMBase.likelihoods(hmm, y))
+    # @test z == z_viterbilog
 end
 
 # Test high-level API interfaces (types compatibility, ...)
@@ -97,15 +96,16 @@ end
 @testset "Integration $(typeof(hmm))" for hmm in targets
     z, y = rand(hmm, 1000)
     z_viterbi = viterbi(hmm, y)
-    α, _ = messages_forwards(hmm, y)
-    β, _ = messages_backwards(hmm, y)
-    γ = forward_backward(hmm, y)
+    α, _ = forwardlog(hmm, y)
+    β, _ = backwardlog(hmm, y)
+    γ = posteriorslog(hmm, y)
     @test size(z) == size(z_viterbi)
     @test size(α) == size(β) == size(γ)
 
-    new_hmm, _ = fit_mle!(hmm, y)
+    new_hmm = fit_mle(hmm, y)
     @test size(new_hmm) == size(hmm)
     @test typeof(new_hmm) == typeof(hmm)
+    @test typeof(copy(hmm)) == typeof(hmm)
 end
 
 @testset "Utilities" begin
@@ -119,4 +119,8 @@ end
     @test mapping[3] == 1
     @test mapping[8] == 2
     @test transmat == [2/3 1/3; 1/2 1/2]
+
+    transmat = rand_transition_matrix(10)
+    @test HMMBase.issquare(transmat)
+    @test istransmat(transmat)
 end

@@ -1,24 +1,22 @@
-# Original implementations by @nantonel
-# https://github.com/maxmouchet/HMMBase.jl/pull/6
+# Same methods as in `viterbi.jl` but using the
+# samples log-likelihood instead of the likelihood.
 
 """
-    viterbi!(a::AbstractVector, A::AbstractMatrix, L::AbstractMatrix)
+    viterbilog!(a::AbstractVector, A::AbstractMatrix, LL::AbstractMatrix)
 
 Find the most likely hidden state sequence, see [Viterbi algorithm](https://en.wikipedia.org/wiki/Viterbi_algorithm).
 """
-function viterbi!(T1::AbstractMatrix, T2::AbstractMatrix, z::AbstractVector, a::AbstractVector, A::AbstractMatrix, L::AbstractMatrix)
-    @argcheck size(T1, 1) == size(T2, 1) == size(L, 1) == size(z, 1)
-    @argcheck size(T1, 2) == size(T2, 2) == size(L, 2) == size(a, 1) == size(A, 1) == size(A, 2)
-
-    T, K = size(L)
+function viterbilog!(T1::AbstractMatrix, T2::AbstractMatrix, z::AbstractVector, a::AbstractVector, A::AbstractMatrix, LL::AbstractMatrix)
+    T, K = size(LL)
 
     fill!(T1, 0.0)
     fill!(T2, 0)
 
+    m = vec_maximum(view(LL, 1, :))
     c = 0.0
 
     for i in Base.OneTo(K)
-        T1[1,i] = a[i] * L[1,i]
+        T1[1,i] = a[i] * exp(LL[1,i] - m)
         c += T1[1,i]
     end
 
@@ -27,6 +25,7 @@ function viterbi!(T1::AbstractMatrix, T2::AbstractMatrix, z::AbstractVector, a::
     end
 
     @inbounds for t in 2:T
+        m = vec_maximum(view(LL, t, :))
         c = 0.0
 
         for j in Base.OneTo(K)
@@ -41,7 +40,7 @@ function viterbi!(T1::AbstractMatrix, T2::AbstractMatrix, z::AbstractVector, a::
                 end
             end
 
-            T1[t,j] = vmax * L[t,j]
+            T1[t,j] = vmax * exp(LL[t,j] - m)
             T2[t,j] = amax
             c += T1[t,j]
         end
