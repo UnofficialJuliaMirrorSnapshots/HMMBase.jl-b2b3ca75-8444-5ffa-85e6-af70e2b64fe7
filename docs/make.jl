@@ -8,6 +8,9 @@ using Distributions
 using HMMBase
 using Random
 
+# https://discourse.julialang.org/t/deactivate-plot-display-to-avoid-need-for-x-server/19359
+ENV["GKSwstype"] = "nul"
+
 Random.seed!(2019)
 
 find_examples() = map(x -> joinpath("examples/", split(basename(x), ".")[1]), glob("*.jl", "examples/"))
@@ -23,9 +26,10 @@ makedocs(
     modules=[HMMBase],
     pages = [
         "index.md",
-        "Manual" => ["model.md", "algorithms.md", "notations.md"],
+        "Manual" => ["models.md", "algorithms.md", "utilities.md", "notations.md"],
         "Examples" => map(example -> "$(example).md", find_examples()),
         "internals.md",
+        "migration.md",
         "_index.md"
     ]
 )

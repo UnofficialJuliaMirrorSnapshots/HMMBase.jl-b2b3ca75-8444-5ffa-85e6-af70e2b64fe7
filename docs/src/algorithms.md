@@ -1,14 +1,15 @@
 # Algorithms
 
+## [Common Options](@id common_options)
+
+- `logl::Bool` (false by default): whether to use samples likelihoods, or log-likelihoods.
+
 ## Forward-Backward
 
 ```@docs
 forward
 backward
 posteriors
-forwardlog
-backwardlog
-posteriorslog
 ```
 
 ## Baum–Welch
@@ -21,5 +22,4 @@ fit_mle
 
 ```@docs
 viterbi
-viterbilog
 ```

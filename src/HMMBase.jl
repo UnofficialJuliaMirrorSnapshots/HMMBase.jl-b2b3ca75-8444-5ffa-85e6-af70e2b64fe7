@@ -1,5 +1,3 @@
-__precompile__()
-
 """
 Hidden Markov Models for Julia.
     
@@ -8,10 +6,11 @@ Hidden Markov Models for Julia.
 module HMMBase
 
 using ArgCheck
+using Clustering
 using Distributions
 using LinearAlgebra
 
-import Base: copy, rand, size
+import Base: ==, copy, rand, size, OneTo
 import Distributions: fit_mle
 
 export
@@ -26,31 +25,31 @@ export
     statdists,
     istransmat,
     likelihoods,
-    loglikelihoods,
-    # messages*.jl
+    # messages_api.jl
     forward,
-    forwardlog,
     backward,
-    backwardlog,
+    likelihood,
     posteriors,
-    posteriorslog,
-    # mle.jl
+    # mle_api.jl
     fit_mle,
-    # viterbi*.jl
+    # viterbi_api.jl
     viterbi,
-    viterbilog,
-    # utils.jl,
-    compute_transition_matrix,
-    rand_transition_matrix
+    # utilities.jl,
+    gettransmat,
+    randtransmat
 
 include("hmm.jl")
 include("mle.jl")
+include("mle_api.jl")
+include("mle_init.jl")
 include("messages.jl")
+include("messages_api.jl")
 include("messages_log.jl")
-include("messages_gen.jl")
 include("viterbi.jl")
+include("viterbi_api.jl")
 include("viterbi_log.jl")
-include("viterbi_gen.jl")
+include("likelihoods.jl")
+include("likelihoods_api.jl")
 include("utilities.jl")
 
 # To be removed in a future version
@@ -66,14 +65,20 @@ export
     messages_forwards_log
 
 @deprecate n_parameters(hmm) nparams(hmm)
-@deprecate log_likelihoods(hmm, observations) loglikelihoods(hmm, observations)
-@deprecate forward_backward(init_distn, trans_matrix, log_likelihoods) posteriorslog(init_distn, trans_matrix, log_likelihoods)
-@deprecate messages_forwards(init_distn, trans_matrix, log_likelihoods) forwardlog(init_distn, trans_matrix, log_likelihoods)
-@deprecate messages_backwards(init_distn, trans_matrix, log_likelihoods) backwardlog(init_distn, trans_matrix, log_likelihoods)
-@deprecate forward_backward(hmm, observations) posteriorslog(hmm, observations)
-@deprecate messages_forwards(hmm, observations) forwardlog(hmm, observations)
-@deprecate messages_backwards(hmm, observations) backwardlog(hmm, observations)
-@deprecate messages_forwards_log(init_distn, trans_matrix, log_likelihoods) log.(forwardlog(init_distn, trans_matrix, log_likelihoods)[1])
-@deprecate messages_backwards_log(trans_matrix, log_likelihoods) log.(backwardlog(init_distn, trans_matrix, log_likelihoods)[1])
+@deprecate log_likelihoods(hmm, observations) likelihoods(hmm, observations, logl = true)
+
+@deprecate forward_backward(init_distn, trans_matrix, log_likelihoods) posteriors(init_distn, trans_matrix, log_likelihoods, logl = true)
+@deprecate messages_forwards(init_distn, trans_matrix, log_likelihoods) forward(init_distn, trans_matrix, log_likelihoods, logl = true)
+@deprecate messages_backwards(init_distn, trans_matrix, log_likelihoods) backward(init_distn, trans_matrix, log_likelihoods, logl = true)
+
+@deprecate forward_backward(hmm, observations) posteriors(hmm, observations, logl = true)
+@deprecate messages_forwards(hmm, observations) forward(hmm, observations, logl = true)
+@deprecate messages_backwards(hmm, observations) backward(hmm, observations, logl = true)
+
+@deprecate messages_forwards_log(init_distn, trans_matrix, log_likelihoods) log.(forward(init_distn, trans_matrix, log_likelihoods, logl = true)[1])
+@deprecate messages_backwards_log(trans_matrix, log_likelihoods) log.(backward(init_distn, trans_matrix, log_likelihoods, logl = true)[1])
+
+@deprecate compute_transition_matrix(seq) gettransmat(seq, relabel = true)
+@deprecate rand_transition_matrix(K, α = 1.0) randtransmat(K, α)
 
 end

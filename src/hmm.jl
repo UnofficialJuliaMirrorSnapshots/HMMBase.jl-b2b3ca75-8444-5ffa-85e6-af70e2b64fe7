@@ -4,7 +4,7 @@
 An HMM type must at-least implement the following interface:
 ```julia
 struct CustomHMM{F,T} <: AbstractHMM{F}
-    a::AbstractVector{T}              # Initial state distribution
+    a::AbstractVector{T}               # Initial state distribution
     A::AbstractMatrix{T}               # Transition matrix
     B::AbstractVector{Distribution{F}} # Observations distributions
     # Custom fields ....
@@ -66,6 +66,8 @@ issquare(A::AbstractMatrix) = size(A,1) == size(A,2)
 Return true if `A` is square and its rows sums to 1.
 """
 istransmat(A::AbstractMatrix) = issquare(A) && all([isprobvec(A[i,:]) for i in 1:size(A,1)])
+
+==(h1::AbstractHMM, h2::AbstractHMM) = (h1.a == h2.a) && (h1.A == h2.A) && (h1.B == h2.B)
 
 """
     rand(hmm::AbstractHMM, T::Int[, initial_state::Int])
@@ -152,7 +154,9 @@ end
 """
     nparams(hmm::AbstractHMM)
 
-Return the number of parameters in `hmm`.  
+Return the number of _free_ parameters in `hmm`.
+
+*NOTE: Does not work, currently, for observations distributions with non-scalar parameters.*
 
 # Example
 ```julia
@@ -162,42 +166,6 @@ nparams(hmm) # 6
 """
 function nparams(hmm::AbstractHMM)
     length(hmm.A) - size(hmm.A)[1] + sum(d -> length(params(d)), hmm.B)
-end
-
-"""
-    likelihoods(hmm, observations)
-
-Return the likelihood per-state and per-observation.
-"""
-function likelihoods(hmm::AbstractHMM{Univariate}, observations)
-    hcat(map(d -> pdf.(d, observations), hmm.B)...)
-end
-
-function likelihoods(hmm::AbstractHMM{Multivariate}, observations)
-    T, K = size(observations, 1), size(hmm, 1)
-    L = Matrix{Float64}(undef, T, K)
-    @inbounds for i = 1:K, t = 1:T
-        L[t,i] = pdf(hmm.B[i], view(observations,t,:))
-    end
-    L
-end
-
-"""
-    loglikelihoods(hmm, observations)
-
-Return the log-likelihood per-state and per-observation.
-"""
-function loglikelihoods(hmm::AbstractHMM{Univariate}, observations)
-    hcat(map(d -> logpdf.(d, observations), hmm.B)...)
-end
-
-function loglikelihoods(hmm::AbstractHMM{Multivariate}, observations)
-    T, K = size(observations, 1), size(hmm, 1)
-    L = Matrix{Float64}(undef, T, K)
-    @inbounds for i = 1:K, t = 1:T
-        L[t,i] = pdf(hmm.B[i], view(observations,t,:))
-    end
-    L
 end
 
 """
