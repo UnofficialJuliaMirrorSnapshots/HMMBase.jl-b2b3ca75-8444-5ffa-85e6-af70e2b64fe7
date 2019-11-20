@@ -16,7 +16,10 @@
 
 *(Not yet released)*
 
-HMMBase v1.0 introduces breaking API changes (see [Migration to v1.0](https://maxmouchet.github.io/HMMBase.jl/dev/migration/)). To temporarily keep the old (and unmaintained) version, add the following in your `Project.toml`:
+HMMBase v1.0 comes with many new features and performance improvements (see the [release notes](TODO)), thanks to [@nantonel PR#6](https://github.com/maxmouchet/HMMBase.jl/pull/6).
+It also introduces breaking API changes (method and fields renaming), see [Migration to v1.0](https://maxmouchet.github.io/HMMBase.jl/dev/migration/) for details on migrating your code to the new version.
+
+To temporarily keep the old (and unmaintained) version, add the following in your `Project.toml`:
 
 ```toml
 [compat]
@@ -25,15 +28,22 @@ HMMBase = "0.0.14"
 
 ## Introduction
 
-HMMBase provides a lightweight and efficient abstraction for hidden Markov models in Julia. Most HMMs libraries only support discrete (e.g. categorical) or normal distributions. In contrast HMMBase builds upon [Distributions.jl](https://github.com/JuliaStats/Distributions.jl) to support arbitrary univariate and multivariate distributions.  
-
-**Features:**
-- Supports any observation distributions conforming to the  [Distribution](https://juliastats.org/Distributions.jl/latest/types/) interface.
-- Fast and stable implementations of the forward/backward, EM (Baum-Welch) and Viterbi algorithms.
-
+HMMBase provides a lightweight and efficient abstraction for hidden Markov models in Julia. Most HMMs libraries only support discrete (e.g. categorical) or Normal distributions. In contrast HMMBase builds upon [Distributions.jl](https://github.com/JuliaStats/Distributions.jl) to support arbitrary univariate and multivariate distributions.  
 See [HMMBase.jl - A lightweight and efficient Hidden Markov Model abstraction](https://discourse.julialang.org/t/ann-hmmbase-jl-a-lightweight-and-efficient-hidden-markov-model-abstraction/21604) for more details on the motivation behind this package.
 
-<img src="https://github.com/maxmouchet/HMMBase.jl/blob/master/benchmark/benchmark_summary.png" width="480">
+<p align="center">
+  <img src="/benchmark/benchmark_summary.png" width="640"><br/>
+  <a href="/benchmark">Benchmark</a> of HMMBase against <a href="https://github.com/hmmlearn/hmmlearn">hmmlearn</a> and <a href="https://github.com/mattjj/pyhsmm">pyhsmm</a>.<br/>(log) stands for "using log-likelihoods".
+</p>
+
+**Features:**
+- Supports any observation distributions conforming to the [Distribution](https://juliastats.org/Distributions.jl/latest/types/) interface.
+- Fast and stable implementations of the forward/backward, EM (Baum-Welch) and Viterbi algorithms.
+
+**Non-features:**
+- Multi-sequences HMMs, see [MS_HMMBase](https://github.com/mmattocks/MS_HMMBase.jl)
+- Bayesian models, probabilistic programming, see [Turing](https://github.com/TuringLang/Turing.jl)
+- Nonparametric models (HDP-H(S)MM, ...)
 
 ## Installation
 

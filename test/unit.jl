@@ -15,10 +15,8 @@ Random.seed!(2019)
     @test size(hmm1) == (2, 1)
     @test size(hmm2) == (2, 2)
 
-    @test nparams(hmm1) == 6
-    # 2 free parameters for the transition matrix, 2x4 for the covariance matrices,
-    # and 2x2 for the means vectors.
-    @test_broken nparams(hmm2) == 14    
+    @test nparams(hmm1) == 3
+    @test nparams(hmm2) == 3
 end
 
 @testset "Base (2)" begin
@@ -45,6 +43,36 @@ end
     @test hmmp != hmm
     @test hmmp.B == hmm.B[perm]
     @test diag(hmmp.A) == diag(hmm.A)[perm]
+end
+
+@testset "Base (4)" begin
+    hmm1 = HMM([0.9 0.1; 0.1 0.9], [Normal(0, 1), Normal(10, 1)])
+    hmm2 = HMM([0.9 0.1; 0.1 0.9], [MvNormal([0.0,0.0], [1.0,1.0]), MvNormal([10.0,10.0], [1.0,1.0])])
+
+    # Univariate HMMs should return observations vectors
+    # (consistent with Distributions.jl)
+    z1, y1 = rand(hmm1, 1000, seq = true)
+    y11 = rand(hmm1, z1)
+    
+    @test size(z1) == (1000,)
+    @test size(y1) == (1000,)
+    @test size(y11) == size(y1)
+
+    # Multivariate HMMs should return a `TxK` matrix
+    # (different from Distributions.jl which returns `KxT`)
+    z2, y2 = rand(hmm2, 1000, seq = true)
+    y22 = rand(hmm2, z2)
+
+    @test size(z2) == (1000,)
+    @test size(y2) == (1000,2)
+    @test size(y22) == size(y2)
+
+    # Rand called with T < 1 should return empty arrays
+    z3, y3 = rand(hmm2, 0, seq = true)
+    y33 = rand(hmm2, z3)
+    @test size(z3) == (0,)
+    @test size(y3) == (0,2)
+    @test size(y33) == size(y3)
 end
 
 @testset "Constructors" begin
@@ -123,7 +151,7 @@ end
 
 @testset "Messages (2)" begin
     hmm = HMM([0.9 0.1; 0.1 0.9], [Normal(0, 1), Normal(10, 1)])
-    z, y = rand(hmm, 1000)
+    y = rand(hmm, 1000)
 
     α1, logtot1 = forward(hmm, y)
     α2, logtot2 = forward(hmm, y, logl = true)
@@ -148,7 +176,7 @@ end
 
 @testset "Messages (3)" begin
     hmm = HMM([0.9 0.1; 0.1 0.9], [Normal(0, 0), Normal(10, 0)])
-    z, y = rand(hmm, 1000)
+    y = rand(hmm, 1000)
 
     # The likelihood of a Normal distribution with std. = 0
     # equals either 0 or +Inf (-Inf, +Inf in log domain).
@@ -167,7 +195,8 @@ end
 
     # See comment in viterbi.jl
     @test_broken @test_throws BoundsError viterbi(hmm, y)
-    @test_broken @test_throws BoundsError viterbi(hmm, y, logl = true)
+    # Works in log implementation
+    @test_nowarn viterbi(hmm, y, logl = true)
 
     _, logtot5 = forward(hmm, y, robust = true)
     _, logtot6 = forward(hmm, y, logl = true, robust = true)
@@ -186,7 +215,7 @@ end
 
 @testset "Viterbi" begin
     hmm = HMM([0.9 0.1; 0.1 0.9], [Normal(0, 1), Normal(100, 1)])
-    z, y = rand(hmm, 1000)
+    z, y = rand(hmm, 1000, seq = true)
 
     zv1 = viterbi(hmm, y)
     zv2 = viterbi(hmm, y, logl = true)
@@ -197,7 +226,7 @@ end
 
 @testset "MLE" begin
     hmm = HMM([0.9 0.1; 0.1 0.9], [Normal(0, 1), Normal(10, 1)])
-    z, y = rand(hmm, 1000)
+    y = rand(hmm, 1000)
 
     # Likelihood should not decrease
     _, hist = fit_mle(hmm, y)
@@ -229,4 +258,24 @@ end
 
     @test_logs (:warn, r".+") warn_logl(rand(10, 2) .- 10)
     @test_nowarn warn_logl(rand(10, 2))
+end
+
+@testset "Reproducibility" begin
+    hmm = HMM([0.9 0.1; 0.1 0.9], [Normal(0, 1), Normal(10, 1)])
+
+    z1, y1 = rand(MersenneTwister(0), hmm, 1000, seq = true)
+    z2, y2 = rand(MersenneTwister(0), hmm, 1000, seq = true)
+    z3, y3 = rand(hmm, 1000, seq = true)
+    @test z1 == z2 != z3
+    @test y1 == y2 != y3
+
+    A1 = randtransmat(MersenneTwister(0), Dirichlet(4, 1.0))
+    A2 = randtransmat(MersenneTwister(0), Dirichlet(4, 1.0))
+    A3 = randtransmat(Dirichlet(4, 1.0))
+    @test A1 == A2 != A3
+
+    A4 = randtransmat(MersenneTwister(0), 4)
+    A5 = randtransmat(MersenneTwister(0), 4)
+    A6 = randtransmat(4)
+    @test A4 == A5 != A6
 end

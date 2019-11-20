@@ -1,9 +1,12 @@
 # Algorithms
 
-## [Common Options](@id common_options)
+See [common options](@ref common_options) for the documentation of `a`, `A`, `L`, ...
 
-- `logl::Bool` (false by default): whether to use samples likelihoods, or log-likelihoods.
-- `robust::Bool` (false by default): truncates [-Inf, +Inf] to [eps(), prevfloat(Inf)] or [eps(), log(prevfloat(Inf))] in the log. case.
+## Baum–Welch
+
+```@docs
+fit_mle
+```
 
 ## Forward-Backward
 
@@ -11,12 +14,6 @@
 forward
 backward
 posteriors
-```
-
-## Baum–Welch
-
-```@docs
-fit_mle
 ```
 
 ## Viterbi

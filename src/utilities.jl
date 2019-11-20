@@ -4,11 +4,14 @@
 Return the transition matrix associated to the label sequence `seq`.  
 The labels must be positive integer.  
 
-# Arguments
-- `relabel::Bool` (false by default): if set to true the sequence
+**Arguments**
+- `seq::Vector{<:Integer}`: positive label sequence.
+
+**Keyword Arguments**
+- `relabel::Bool = false`: if set to true the sequence
   will be made contiguous. E.g. `[7,7,9,9,1,1]` will become `[2,2,3,3,1,1]`.
 
-# Output
+**Output**
 - `Dict{Integer,Integer}`: the mapping between the original and the new labels.
 - `Matrix{Float64}`: the transition matrix.
 """
@@ -36,39 +39,50 @@ function gettransmat(seq::Vector{<:Integer}; relabel = false)
 end
 
 """
-    randtransmat(prior) -> Matrix{Float64}
+    randtransmat([rng,] prior) -> Matrix{Float64}
 
 Generate a transition matrix where each row is sampled from `prior`.  
 The prior must be a multivariate probability distribution, such as a
 Dirichlet distribution.
 
-# Example
+**Arguments**
+- `prior::MultivariateDistribution`: distribution over the transition matrix rows.
+
+**Example**
 ```julia
 A = randtransmat(Dirichlet([0.1, 0.1, 0.1]))
 ```
 """
-function randtransmat(prior::MultivariateDistribution)
+function randtransmat(rng::AbstractRNG, prior::MultivariateDistribution)
     K = length(prior)
     A = Matrix{Float64}(undef, K, K)
     for i in OneTo(K)
-        A[i,:] = rand(prior)
+        A[i,:] = rand(rng, prior)
     end
     A
 end
 
+randtransmat(prior::MultivariateDistribution) = randtransmat(GLOBAL_RNG, prior)
+
 """
-    randtransmat(K, α = 1.0) -> Matrix{Float64}
+    randtransmat([rng, ]K, α = 1.0) -> Matrix{Float64}
 
 Generate a transition matrix where each row is sampled from
 a Dirichlet distribution of dimension `K` and concentration
 parameter `α`.
 
-# Example
+**Arguments**
+- `K::Integer`: number of states.
+- `α::Float64 = 1.0`: concentration parameter of the Dirichlet distribution.
+
+**Example**
 ```julia
 A = randtransmat(4)
 ```
 """
-randtransmat(K::Integer, α = 1.0) = randtransmat(Dirichlet(K, α))
+randtransmat(rng::AbstractRNG, K::Integer, α = 1.0) = randtransmat(rng, Dirichlet(K, α))
+
+randtransmat(K::Integer, args...) = randtransmat(GLOBAL_RNG, K, args...)
 
 # function rand(::Type{HMM}, D::Type{Distribution}, K::Integer, fn::Function)
 

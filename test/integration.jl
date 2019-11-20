@@ -15,7 +15,7 @@ hmms = [
     # HMM API
     @test hmm !== copy(hmm)
 
-    z, y = rand(hmm, 1000)
+    z, y = rand(hmm, 1000, seq = true)
     @test size(z, 1) == size(y, 1)
     @test size(y, 2) == size(hmm, 2)
 
@@ -56,6 +56,10 @@ hmms = [
     @test size(zv1) == size(zv2) == size(z)
 
     # MLE
+    hmm2, _ = fit_mle(hmm, y, maxiter = 1)
+    @test size(hmm2) == size(hmm)
+    @test typeof(hmm2) == typeof(hmm)
+
     hmm2, _ = fit_mle(hmm, y, init = nothing)
     @test size(hmm2) == size(hmm)
     @test typeof(hmm2) == typeof(hmm)
@@ -69,7 +73,7 @@ end
 @testset "Integration T=$T" for T in [0, 1]
     hmm = HMM([0.9 0.1; 0.1 0.9], [Normal(10,1), Normal(1,1)])
 
-    z, y = rand(hmm, 0)
+    z, y = rand(hmm, 0, seq = true)
     @test size(z, 1) == size(y, 1)
     @test size(y, 2) == size(hmm, 2)
 

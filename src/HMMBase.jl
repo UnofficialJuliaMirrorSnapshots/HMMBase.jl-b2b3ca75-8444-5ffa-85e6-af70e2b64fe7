@@ -12,6 +12,7 @@ using LinearAlgebra
 
 import Base: ==, copy, rand, size, OneTo
 import Distributions: fit_mle, loglikelihood
+import Random: AbstractRNG, GLOBAL_RNG
 
 export
     # hmm.jl
@@ -44,10 +45,8 @@ include("mle_api.jl")
 include("mle_init.jl")
 include("messages.jl")
 include("messages_api.jl")
-include("messages_log.jl")
 include("viterbi.jl")
 include("viterbi_api.jl")
-include("viterbi_log.jl")
 include("likelihoods.jl")
 include("likelihoods_api.jl")
 include("utilities.jl")
@@ -62,7 +61,9 @@ export
     messages_backwards,
     messages_backwards_log,
     messages_forwards,
-    messages_forwards_log
+    messages_forwards_log,
+    compute_transition_matrix,
+    rand_transition_matrix
 
 @deprecate n_parameters(hmm) nparams(hmm)
 @deprecate log_likelihoods(hmm, observations) likelihoods(hmm, observations, logl = true)
